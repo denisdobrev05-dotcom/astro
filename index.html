@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+  <title>Звездна карта · Лична астрология</title>
+  <meta name="description" content="Лична натална астрологична карта на български език." />
+  <meta name="theme-color" content="#0a0820" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <!-- iOS „добави на началния екран“ -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Звездна карта" />
+  <link rel="apple-touch-icon" href="icons/icon-180.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+
+  <header class="app-header">
+    <div class="brand">✦ Звездна карта</div>
+  </header>
+
+  <main class="app-main">
+    <!-- Екран: рождени данни -->
+    <section class="screen" data-screen="form">
+      <div class="screen-inner">
+        <h1 class="form-title">Вашата звездна карта</h1>
+        <p class="form-lead">Въведете рождените си данни, за да изчислим точната ви натална карта.</p>
+        <form id="birth-form" class="form" autocomplete="off">
+          <label class="field">
+            <span>Име <em>(по желание)</em></span>
+            <input type="text" id="f-name" placeholder="Как да се обръщаме към вас?" />
+          </label>
+
+          <label class="field">
+            <span>Дата на раждане</span>
+            <input type="date" id="f-date" required min="1900-01-01" max="2050-12-31" />
+          </label>
+
+          <label class="field">
+            <span>Точен час на раждане</span>
+            <input type="time" id="f-time" value="12:00" />
+          </label>
+          <label class="check">
+            <input type="checkbox" id="f-time-unknown" />
+            <span>Не знам точния час</span>
+          </label>
+          <div class="warn hidden" id="time-warn">Без точен час Асцендентът и домовете ще са приблизителни.</div>
+
+          <label class="field">
+            <span>Място на раждане</span>
+            <select id="f-city" required>
+              <option value="" disabled selected>Изберете град…</option>
+            </select>
+          </label>
+
+          <div class="manual hidden" id="manual-coords">
+            <label class="field half">
+              <span>Геогр. ширина</span>
+              <input type="number" id="f-lat" step="0.0001" placeholder="напр. 42.70" />
+            </label>
+            <label class="field half">
+              <span>Геогр. дължина</span>
+              <input type="number" id="f-lon" step="0.0001" placeholder="напр. 23.32" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Часова зона</span>
+            <select id="f-tz">
+              <option value="auto" selected>Автоматично (България EET/EEST)</option>
+              <option value="2">UTC+2 (зимно, EET)</option>
+              <option value="3">UTC+3 (лятно, EEST)</option>
+            </select>
+          </label>
+
+          <button type="submit" class="primary-btn">Изчисли картата ми ✦</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Екран: Днес -->
+    <section class="screen" data-screen="today">
+      <div class="screen-inner" id="today"></div>
+    </section>
+
+    <!-- Екран: Карта -->
+    <section class="screen" data-screen="chart">
+      <div class="screen-inner" id="chart-view"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav hidden">
+    <button class="nav-btn" data-go="today"><span class="ic">☀</span><span>Днес</span></button>
+    <button class="nav-btn" data-go="chart"><span class="ic">✦</span><span>Карта</span></button>
+    <button class="nav-btn" data-go="form"><span class="ic">⚙</span><span>Данни</span></button>
+  </nav>
+
+  <script src="js/cities.js"></script>
+  <script src="js/timezone.js"></script>
+  <script src="js/astro.js"></script>
+  <script src="js/interpretations.js"></script>
+  <script src="js/daily.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // прости движещи се звезди
+    (function () {
+      const host = document.getElementById("stars");
+      let html = "";
+      for (let i = 0; i < 70; i++) {
+        const x = Math.random() * 100, y = Math.random() * 100;
+        const s = Math.random() * 2 + 0.5, d = Math.random() * 4 + 2, delay = Math.random() * 4;
+        html += `<i style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-duration:${d}s;animation-delay:${delay}s"></i>`;
+      }
+      host.innerHTML = html;
+    })();
+    // регистрация на service worker (offline)
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(console.error));
+    }
+  </script>
+</body>
+</html>

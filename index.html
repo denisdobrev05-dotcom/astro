@@ -122,6 +122,18 @@
         html += `<i style="left:${x}%;top:${y}%;width:${s}px;height:${s}px;animation-duration:${d}s;animation-delay:${delay}s"></i>`;
       }
       host.innerHTML = html;
+      // случайни падащи звезди
+      function shoot() {
+        const el = document.createElement("div");
+        el.className = "shooting";
+        el.style.left = (Math.random() * 70) + "%";
+        el.style.top = (Math.random() * 40) + "%";
+        host.appendChild(el);
+        el.style.animation = "shoot 1.1s ease-out forwards";
+        setTimeout(() => el.remove(), 1300);
+        setTimeout(shoot, 6000 + Math.random() * 9000);
+      }
+      setTimeout(shoot, 3000);
     })();
     // регистрация на service worker (offline) + авто-обновяване при нова версия
     if ("serviceWorker" in navigator) {

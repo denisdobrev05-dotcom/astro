@@ -200,6 +200,54 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .planet-item.flash{animation:flash 1.5s ease}
 @keyframes flash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 2px rgba(232,207,134,.6)}}
 
+/* ---------- Интерактивно колело ---------- */
+.wheel.anim-in{animation:wheelIn .85s cubic-bezier(.2,.8,.2,1)}
+@keyframes wheelIn{from{opacity:0;transform:rotate(-12deg) scale(.9)}to{opacity:1;transform:none}}
+.wheel .asp-line{transition:opacity .25s, stroke-width .25s}
+.wheel .asp-line.dim{opacity:.05}
+.wheel .asp-line.hl{opacity:1;stroke-width:1.7}
+.wheel-planet{transition:font-size .2s}
+.wheel-planet.pulse{font-size:20px;filter:drop-shadow(0 0 7px rgba(232,207,134,.95))}
+.wheel-info{
+  text-align:center;font-size:13.5px;color:var(--muted);line-height:1.4;
+  padding:11px 14px;margin:2px 0 12px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--line);transition:all .2s;
+}
+.wheel-info.active{color:var(--gold-soft);border-color:rgba(212,177,60,.35);background:rgba(212,177,60,.07)}
+
+/* ---------- Почерк на картата + баланс ---------- */
+.summary-card{padding:18px;border-radius:var(--radius);background:var(--panel);border:1px solid var(--line);margin:0 0 16px}
+.sig-text{font-size:15.5px;line-height:1.55;margin-bottom:14px}
+.bal-group{margin-top:14px}
+.bal-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.bal-row{display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:13px}
+.bal-label{width:78px;color:#cfcce6}
+.bal-track{flex:1;height:9px;background:rgba(255,255,255,0.07);border-radius:6px;overflow:hidden}
+.bal-fill{display:block;height:100%;border-radius:6px;transform-origin:left;animation:grow .9s ease}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.bal-val{width:36px;text-align:right;color:var(--muted)}
+
+.aspect-row{cursor:pointer;transition:border-color .2s,transform .1s}
+.aspect-row:active{transform:scale(.99)}
+.tap-hint{color:var(--accent);font-size:12px}
+
+/* ---------- Лунно чипче и споделяне (Днес) ---------- */
+.moon-chip{
+  display:flex;align-items:center;gap:14px;width:100%;text-align:left;margin:0 0 18px;padding:14px 16px;
+  background:linear-gradient(160deg,rgba(40,30,90,.5),rgba(18,14,42,.5));
+  border:1px solid var(--line);border-radius:14px;color:var(--text);cursor:pointer;transition:transform .15s;
+}
+.moon-chip:active{transform:scale(.99)}
+.mc-emoji{font-size:34px;line-height:1}
+.mc-text{font-size:13px;color:var(--muted);line-height:1.45}
+.mc-text b{color:var(--gold-soft);font-size:15px}
+.share-btn{margin-top:14px;padding:9px 16px;font-size:13.5px;background:rgba(255,255,255,0.06);border:1px solid var(--line);border-radius:10px;color:var(--gold-soft);cursor:pointer}
+.share-btn:active{transform:scale(.97)}
+
+/* ---------- Падащи звезди ---------- */
+.shooting{position:absolute;height:2px;width:60px;background:linear-gradient(90deg,#fff,rgba(255,255,255,0));border-radius:2px;opacity:0;filter:drop-shadow(0 0 6px #fff);pointer-events:none}
+@keyframes shoot{0%{opacity:0;transform:translate(0,0) rotate(18deg) scaleX(.2)}8%{opacity:.95}100%{opacity:0;transform:translate(260px,120px) rotate(18deg) scaleX(1)}}
+
 /* ---------- Долна навигация ---------- */
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:6;

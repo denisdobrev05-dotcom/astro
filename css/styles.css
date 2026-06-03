@@ -190,11 +190,13 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
   background:linear-gradient(160deg, rgba(40,30,90,.5), rgba(18,14,42,.5));border:1px solid var(--line);
 }
 .phase-list{display:flex;flex-direction:column;gap:9px}
-.phase-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
-.ph-emoji{font-size:24px}
-.ph-name{font-weight:600;font-size:15px}
-.ph-date{margin-left:auto;text-align:right;color:var(--muted);font-size:12.5px;line-height:1.4;text-transform:capitalize}
-.ph-date em{color:var(--gold-soft);font-style:normal}
+.phase-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.ph-emoji{font-size:26px;line-height:1.1}
+.ph-main{flex:1}
+.ph-name{font-weight:600;font-size:15.5px;color:var(--gold-soft)}
+.ph-brief{font-size:13px;color:#cfcce6;line-height:1.45;margin-top:4px}
+.ph-when{color:var(--muted);font-size:12.5px;margin-top:6px;text-transform:capitalize}
+.ph-when em{color:var(--gold-soft);font-style:normal}
 
 /* подсветване при кликане на планета от колелото */
 .planet-item.flash{animation:flash 1.5s ease}

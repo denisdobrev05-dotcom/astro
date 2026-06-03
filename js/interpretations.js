@@ -271,11 +271,20 @@ const Interp = (function () {
     return { elements: el, modalities: mod, total, dominantElement: domEl, dominantModality: domMod, signature };
   }
 
+  // Кратко обяснение за четирите основни фази (за списъка „Следващи фази“)
+  const PHASE_BRIEF = {
+    "Новолуние": "Начало на нов цикъл. Време за нови намерения и свежи начала — каквото засееш сега, расте напред.",
+    "Първа четвърт": "Време за действие и решения. Появяват се първите препятствия — те проверяват колко държиш на целта.",
+    "Пълнолуние": "Връхна точка и яснота. Нещата излизат наяве; време за реализация и за освобождаване от излишното.",
+    "Последна четвърт": "Време за отпускане и равносметка. Пускаш старото, за да направиш място за новото.",
+  };
+  function phaseBrief(name) { return PHASE_BRIEF[name] || ""; }
+
   return {
     SIGN, HOUSE, PLANET,
     signTrait, planetInSign, planetInHouse,
     sunText, moonText, ascText, aspectMeaning, dominance,
-    transitText, transitHeadline, moonPhaseInfo, chartSummary,
+    transitText, transitHeadline, moonPhaseInfo, chartSummary, phaseBrief,
   };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = Interp;

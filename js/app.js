@@ -255,8 +255,11 @@
       const when = days === 0 ? "днес" : days === 1 ? "утре" : `след ${days} дни`;
       return `<div class="phase-row">
         <span class="ph-emoji">${p.emoji}</span>
-        <span class="ph-name">${p.name}</span>
-        <span class="ph-date">${fmtDate(p.date)} · <em>${when}</em></span>
+        <div class="ph-main">
+          <div class="ph-name">${p.name}</div>
+          <div class="ph-brief">${esc(Interp.phaseBrief(p.name))}</div>
+          <div class="ph-when">${fmtDate(p.date)} · <em>${when}</em></div>
+        </div>
       </div>`;
     }).join("");
 

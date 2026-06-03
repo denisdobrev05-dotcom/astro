@@ -123,9 +123,28 @@
       }
       host.innerHTML = html;
     })();
-    // регистрация на service worker (offline)
+    // регистрация на service worker (offline) + авто-обновяване при нова версия
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(console.error));
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").then((reg) => {
+          reg.update();
+          reg.addEventListener("updatefound", () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener("statechange", () => {
+              if (nw.state === "installed" && navigator.serviceWorker.controller) {
+                nw.postMessage("skipWaiting"); // активирай новата версия веднага
+              }
+            });
+          });
+        }).catch(console.error);
+      });
     }
   </script>
 </body>

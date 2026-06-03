@@ -441,6 +441,16 @@
     toggle.addEventListener("click", () => { showTransitOverlay = !showTransitOverlay; renderChart(); showScreen("chart"); });
     host.appendChild(toggle);
 
+    if (showTransitOverlay) {
+      const tx = document.createElement("div");
+      tx.className = "transit-explain";
+      tx.innerHTML = `<b>Какво са транзитите?</b>
+        Синият външен пръстен показва къде са планетите в небето <em>точно сега</em>, подредени около твоята натална карта (вътрешния кръг — небето в мига на раждането ти).
+        Докато планетите се движат, те минават над наталните ти позиции и образуват ъгли към тях. Така „активират“ различни теми в живота ти за кратко време.
+        Затова транзитите показват <b>какво се случва за теб днес</b> — а на екран „Днес“ виждаш и обясненията за най-силните от тях.`;
+      host.appendChild(tx);
+    }
+
     // почерк на картата + баланс на стихиите и качествата
     const sum = Interp.chartSummary(c);
     const elColors = ELEMENT_COLORS;

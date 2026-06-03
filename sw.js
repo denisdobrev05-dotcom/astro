@@ -1,7 +1,7 @@
 /* sw.js — service worker за offline работа.
  * Стратегия: „network-first“ за съдържание от същия източник (винаги показва
  * най-новата версия, когато има интернет) с връщане към кеша при offline. */
-const CACHE = "zvezdna-karta-v6";
+const CACHE = "zvezdna-karta-v7";
 const ASSETS = [
   "./",
   "./index.html",

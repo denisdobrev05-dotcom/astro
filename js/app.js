@@ -183,7 +183,6 @@
       <div class="today-card">
         <div class="today-msg">${esc(msg.main)}</div>
         <div class="today-note">${esc(msg.note)}</div>
-        <button class="share-btn" id="share-msg" aria-label="Сподели">⇪ Сподели</button>
       </div>
       <button class="moon-chip" id="moon-chip">
         <span class="mc-emoji">${phInfo.emoji}</span>
@@ -199,20 +198,7 @@
     `;
     $("#go-chart").addEventListener("click", () => showScreen("chart"));
     $("#moon-chip").addEventListener("click", () => showScreen("moon"));
-    $("#share-msg").addEventListener("click", () => shareMessage(msg));
     renderTransitToday($("#transit-today"));
-  }
-
-  function shareMessage(msg) {
-    const text = `✦ ${msg.main}\n${msg.note}\n— Звездна карта`;
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(text).then(() => {
-        const b = $("#share-msg");
-        if (b) { b.textContent = "✓ Копирано"; setTimeout(() => { b.textContent = "⇪ Сподели"; }, 1800); }
-      }).catch(() => {});
-    }
   }
 
   function renderTransitToday(host) {
@@ -228,13 +214,14 @@
           <span class="t-glyph">${chart.planets[a.transit].glyph}</span>
           <span class="t-line">${a.transit} ${a.glyph} ${a.natal}</span>
           <span class="t-asp">${a.aspect}</span>
+          <span class="t-chev" aria-hidden="true">▾</span>
         </summary>
         <div class="t-body">${esc(Interp.transitText(a.transit, a.natal, a.aspect))}</div>
       </details>`;
     }
     host.innerHTML = `
       <h2 class="section-title">Какво се случва за теб днес</h2>
-      <p class="section-sub">Къде са планетите днес спрямо твоята натална карта.</p>
+      <p class="section-sub">Къде са планетите днес спрямо твоята натална карта. Докосни ред, за да видиш обяснение.</p>
       <div class="transit-headline">${esc(headline)}</div>
       <div class="transit-list">${rows || '<p class="muted small">Днес няма тесни транзитни аспекти.</p>'}</div>`;
   }

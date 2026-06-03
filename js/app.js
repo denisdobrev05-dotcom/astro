@@ -10,14 +10,44 @@
   let chart = null;     // текущата изчислена карта
   let profile = null;   // запазените рождени данни
   let showTransitOverlay = false; // наслагване на днешните транзити върху колелото
+  let wheelRefs = { lines: [], planets: {} }; // връзки към SVG елементите за осветяване
+  let currentSel = null;          // текущо избрана планета в колелото
 
-  function openPlanet(name) {
-    const d = document.getElementById("pl-" + name);
-    if (!d) return;
-    d.open = true;
-    d.classList.add("flash");
-    d.scrollIntoView({ behavior: "smooth", block: "center" });
-    setTimeout(() => d.classList.remove("flash"), 1500);
+  function setWheelInfo(text, cls) {
+    const box = document.getElementById("wheel-info");
+    if (!box) return;
+    box.textContent = text;
+    box.className = "wheel-info" + (cls ? " " + cls : "");
+  }
+  function clearWheelHL() {
+    wheelRefs.lines.forEach((o) => o.el.classList.remove("dim", "hl"));
+    Object.values(wheelRefs.planets).forEach((t) => t.classList.remove("pulse"));
+  }
+  function selectPlanet(name) {
+    if (currentSel === name) { // повторно докосване → изчистване
+      clearWheelHL(); currentSel = null;
+      setWheelInfo("Докосни планета в колелото, за да видиш аспектите ѝ");
+      return;
+    }
+    currentSel = name;
+    wheelRefs.lines.forEach((o) => {
+      const inv = (o.a === name || o.b === name);
+      o.el.classList.toggle("hl", inv);
+      o.el.classList.toggle("dim", !inv);
+    });
+    Object.entries(wheelRefs.planets).forEach(([n, t]) => t.classList.toggle("pulse", n === name));
+    const pl = chart.planets[name];
+    const n = chart.aspects.filter((x) => x.a === name || x.b === name).length;
+    setWheelInfo(`${pl.glyph} ${name} · ${pl.signName} ${Math.floor(pl.degInSign)}° · ${pl.house}-ти дом — ${n} аспект${n === 1 ? "" : "а"} (докосни пак за изчистване)`, "active");
+  }
+  function selectAspect(a, b) {
+    currentSel = null;
+    wheelRefs.lines.forEach((o) => {
+      const m = (o.a === a && o.b === b) || (o.a === b && o.b === a);
+      o.el.classList.toggle("hl", m);
+      o.el.classList.toggle("dim", !m);
+    });
+    Object.entries(wheelRefs.planets).forEach(([n, t]) => t.classList.toggle("pulse", n === a || n === b));
   }
 
   // ---------- Съхранение ----------
@@ -144,6 +174,8 @@
     const msg = Daily.messageFor(new Date(), chart, dom);
     const sun = chart.planets["Слънце"];
     const moon = chart.planets["Луна"];
+    const ph = Astro.moonPhase(new Date());
+    const phInfo = Interp.moonPhaseInfo(ph.angle);
     const dateStr = new Date().toLocaleDateString("bg-BG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     $("#today").innerHTML = `
       <div class="today-greet">${greeting(profile)}</div>
@@ -151,7 +183,12 @@
       <div class="today-card">
         <div class="today-msg">${esc(msg.main)}</div>
         <div class="today-note">${esc(msg.note)}</div>
+        <button class="share-btn" id="share-msg" aria-label="Сподели">⇪ Сподели</button>
       </div>
+      <button class="moon-chip" id="moon-chip">
+        <span class="mc-emoji">${phInfo.emoji}</span>
+        <span class="mc-text"><b>${phInfo.name}</b><br>${Math.round(ph.illumination * 100)}% осветеност · виж лунния календар →</span>
+      </button>
       <div class="today-mini">
         <div class="mini"><span class="mini-glyph">☉</span><span>Слънце в ${sun.signName}</span></div>
         <div class="mini"><span class="mini-glyph">☽</span><span>Луна в ${moon.signName}</span></div>
@@ -161,7 +198,21 @@
       <button class="link-btn" id="go-chart">Виж пълната си натална карта →</button>
     `;
     $("#go-chart").addEventListener("click", () => showScreen("chart"));
+    $("#moon-chip").addEventListener("click", () => showScreen("moon"));
+    $("#share-msg").addEventListener("click", () => shareMessage(msg));
     renderTransitToday($("#transit-today"));
+  }
+
+  function shareMessage(msg) {
+    const text = `✦ ${msg.main}\n${msg.note}\n— Звездна карта`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else if (navigator.clipboard) {
+      navigator.clipboard.writeText(text).then(() => {
+        const b = $("#share-msg");
+        if (b) { b.textContent = "✓ Копирано"; setTimeout(() => { b.textContent = "⇪ Сподели"; }, 1800); }
+      }).catch(() => {});
+    }
   }
 
   function renderTransitToday(host) {
@@ -249,7 +300,7 @@
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
-    svg.setAttribute("class", "wheel");
+    svg.setAttribute("class", "wheel anim-in");
 
     function arcPath(r1, r2, a0, a1) {
       const [x0, y0] = polar(cx, cy, r2, a0);
@@ -276,8 +327,10 @@
       t.textContent = Astro.SIGN_GLYPHS[i];
     }
 
-    // вътрешен кръг
-    el("circle", { cx, cy, r: rInner, fill: "rgba(10,8,30,0.5)", stroke: "rgba(255,255,255,0.10)", "stroke-width": "1" });
+    // вътрешен кръг (докосване → изчистване на избора)
+    const inner = el("circle", { cx, cy, r: rInner, fill: "rgba(10,8,30,0.5)", stroke: "rgba(255,255,255,0.10)", "stroke-width": "1" });
+    inner.style.cursor = "pointer";
+    inner.addEventListener("click", () => { clearWheelHL(); currentSel = null; setWheelInfo("Докосни планета в колелото, за да видиш аспектите ѝ"); });
     el("circle", { cx, cy, r: rZodiac, fill: "none", stroke: "rgba(255,255,255,0.12)", "stroke-width": "1" });
 
     // куспиди на домовете
@@ -306,10 +359,12 @@
     // аспектни линии
     const names = Object.keys(chart.planets);
     const aspColor = { "тригон": "#3f7bbf", "секстил": "#3f7bbf", "съединение": "#d4b13c", "квадрат": "#e0533d", "опозиция": "#e0533d" };
+    wheelRefs = { lines: [], planets: {} };
     for (const a of chart.aspects) {
       const [x1, y1] = polar(cx, cy, rInner - 2, lonToAngle(chart.planets[a.a].lon));
       const [x2, y2] = polar(cx, cy, rInner - 2, lonToAngle(chart.planets[a.b].lon));
-      el("line", { x1, y1, x2, y2, stroke: aspColor[a.aspect] || "#888", "stroke-width": "0.8", "stroke-opacity": "0.5" });
+      const line = el("line", { x1, y1, x2, y2, stroke: aspColor[a.aspect] || "#888", "stroke-width": "0.9", "stroke-opacity": "0.5", class: "asp-line" });
+      wheelRefs.lines.push({ el: line, a: a.a, b: a.b });
     }
 
     // планети — с леко разреждане при припокриване
@@ -326,10 +381,11 @@
       // тире от пръстена към планетата
       const [lx, ly] = polar(cx, cy, rZodiac, a);
       el("line", { x1: lx, y1: ly, x2: px, y2: py, stroke: "rgba(255,255,255,0.15)", "stroke-width": "0.7" });
-      const t = el("text", { x: px, y: py, fill: "#f4f1ff", "font-size": "15", "text-anchor": "middle", "dominant-baseline": "central" });
+      const t = el("text", { x: px, y: py, fill: "#f4f1ff", "font-size": "15", "text-anchor": "middle", "dominant-baseline": "central", class: "wheel-planet" });
       t.textContent = it.glyph;
       t.style.cursor = "pointer";
-      t.addEventListener("click", () => openPlanet(it.name));
+      t.addEventListener("click", () => selectPlanet(it.name));
+      wheelRefs.planets[it.name] = t;
       const deg = Math.floor(chart.planets[it.name].degInSign);
       const [dx, dy] = polar(cx, cy, r - 13, a);
       const td = el("text", { x: dx, y: dy, fill: "rgba(255,255,255,0.5)", "font-size": "8", "text-anchor": "middle", "dominant-baseline": "central" });
@@ -362,6 +418,7 @@
     const c = chart;
     const host = $("#chart-view");
     host.innerHTML = "";
+    currentSel = null;
 
     // заглавна тройка
     const head = document.createElement("div");
@@ -380,6 +437,12 @@
     wheelBox.appendChild(renderWheel(showTransitOverlay));
     host.appendChild(wheelBox);
 
+    const info = document.createElement("div");
+    info.id = "wheel-info";
+    info.className = "wheel-info";
+    info.textContent = "Докосни планета в колелото, за да видиш аспектите ѝ";
+    host.appendChild(info);
+
     const toggle = document.createElement("button");
     toggle.className = "toggle-btn" + (showTransitOverlay ? " on" : "");
     toggle.innerHTML = showTransitOverlay
@@ -387,6 +450,30 @@
       : "○ Покажи транзитите днес върху картата";
     toggle.addEventListener("click", () => { showTransitOverlay = !showTransitOverlay; renderChart(); showScreen("chart"); });
     host.appendChild(toggle);
+
+    // почерк на картата + баланс на стихиите и качествата
+    const sum = Interp.chartSummary(c);
+    const elColors = ELEMENT_COLORS;
+    const modColors = { "кардинален": "#8a6cff", "фиксиран": "#c06bd0", "променлив": "#6fd3e0" };
+    const bar = (label, val, total, color) => {
+      const pct = Math.round(val / total * 100);
+      return `<div class="bal-row"><span class="bal-label">${label}</span>
+        <span class="bal-track"><span class="bal-fill" style="width:${pct}%;background:${color}"></span></span>
+        <span class="bal-val">${pct}%</span></div>`;
+    };
+    const summary = document.createElement("div");
+    summary.className = "summary-card";
+    summary.innerHTML = `
+      <div class="sig-text">${esc(sum.signature)}</div>
+      <div class="bal-group">
+        <div class="bal-title">Стихии</div>
+        ${["Огън", "Земя", "Въздух", "Вода"].map((k) => bar(k, sum.elements[k], sum.total, elColors[k])).join("")}
+      </div>
+      <div class="bal-group">
+        <div class="bal-title">Качества</div>
+        ${["кардинален", "фиксиран", "променлив"].map((k) => bar(k.charAt(0).toUpperCase() + k.slice(1), sum.modalities[k], sum.total, modColors[k])).join("")}
+      </div>`;
+    host.appendChild(summary);
 
     // обяснения
     const sun = c.planets["Слънце"], moon = c.planets["Луна"];
@@ -441,7 +528,11 @@
       row.className = "aspect-row";
       row.innerHTML = `
         <div class="aspect-title">${a.glyph} ${chart.planets[a.a].glyph} ${a.a} — ${a.aspect} — ${a.b} ${chart.planets[a.b].glyph}</div>
-        <div class="aspect-desc">Тук ${esc(Interp.aspectMeaning(a.aspect))}.</div>`;
+        <div class="aspect-desc">Тук ${esc(Interp.aspectMeaning(a.aspect))}. <span class="tap-hint">Докосни, за да го видиш на колелото ↑</span></div>`;
+      row.addEventListener("click", () => {
+        selectAspect(a.a, a.b);
+        wheelBox.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
       list.appendChild(row);
     }
     if (top.length === 0) list.innerHTML = `<p class="muted">Няма значими аспекти в зададените граници.</p>`;

@@ -233,11 +233,49 @@ const Interp = (function () {
     return PHASES[0];
   }
 
+  // ---- Обобщение на картата: баланс на стихиите/качествата и „почерк“ ----
+  const EL_ADJ = { "Огън": "огнено", "Земя": "земно", "Въздух": "въздушно", "Вода": "водно" };
+  const EL_TRAIT = {
+    "Огън": "действа от ентусиазъм, инстинкт и желание да твори",
+    "Земя": "стъпва здраво и гради нещата практично и търпеливо",
+    "Въздух": "живее чрез идеи, любопитство и общуване",
+    "Вода": "усеща света дълбоко и се води от сърцето си",
+  };
+  const MOD_ADJ = { "кардинален": "кардинално", "фиксиран": "фиксирано", "променлив": "променливо" };
+  const MOD_TRAIT = {
+    "кардинален": "обича да започва, да води и да задава посоката",
+    "фиксиран": "довежда нещата докрай и държи здраво на своето",
+    "променлив": "приспособява се леко и се чувства добре сред промяната",
+  };
+
+  function chartSummary(chart) {
+    const weights = {
+      "Слънце": 3, "Луна": 3, "Меркурий": 1, "Венера": 1, "Марс": 1,
+      "Юпитер": 1, "Сатурн": 1, "Уран": 1, "Нептун": 1, "Плутон": 1,
+    };
+    const el = { "Огън": 0, "Земя": 0, "Въздух": 0, "Вода": 0 };
+    const mod = { "кардинален": 0, "фиксиран": 0, "променлив": 0 };
+    let total = 0;
+    for (const [name, pl] of Object.entries(chart.planets)) {
+      const w = weights[name] || 1;
+      el[SIGN[pl.sign].el] += w;
+      mod[SIGN[pl.sign].mod] += w;
+      total += w;
+    }
+    el[SIGN[chart.asc.sign].el] += 2;
+    mod[SIGN[chart.asc.sign].mod] += 2;
+    total += 2;
+    const domEl = Object.entries(el).sort((a, b) => b[1] - a[1])[0][0];
+    const domMod = Object.entries(mod).sort((a, b) => b[1] - a[1])[0][0];
+    const signature = `Картата ти звучи предимно ${EL_ADJ[domEl]} и ${MOD_ADJ[domMod]}. Това те прави човек, който ${EL_TRAIT[domEl]} и ${MOD_TRAIT[domMod]}.`;
+    return { elements: el, modalities: mod, total, dominantElement: domEl, dominantModality: domMod, signature };
+  }
+
   return {
     SIGN, HOUSE, PLANET,
     signTrait, planetInSign, planetInHouse,
     sunText, moonText, ascText, aspectMeaning, dominance,
-    transitText, transitHeadline, moonPhaseInfo,
+    transitText, transitHeadline, moonPhaseInfo, chartSummary,
   };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = Interp;

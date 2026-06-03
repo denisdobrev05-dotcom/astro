@@ -9,6 +9,16 @@
 
   let chart = null;     // текущата изчислена карта
   let profile = null;   // запазените рождени данни
+  let showTransitOverlay = false; // наслагване на днешните транзити върху колелото
+
+  function openPlanet(name) {
+    const d = document.getElementById("pl-" + name);
+    if (!d) return;
+    d.open = true;
+    d.classList.add("flash");
+    d.scrollIntoView({ behavior: "smooth", block: "center" });
+    setTimeout(() => d.classList.remove("flash"), 1500);
+  }
 
   // ---------- Съхранение ----------
   function loadProfile() {
@@ -113,8 +123,14 @@
   function renderAll() {
     if (!chart) return;
     renderToday();
+    renderMoon();
     renderChart();
     $(".bottom-nav").classList.remove("hidden");
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString("bg-BG", { weekday: "long", day: "numeric", month: "long" }) +
+      ", " + d.toLocaleTimeString("bg-BG", { hour: "2-digit", minute: "2-digit" });
   }
 
   function greeting(p) {
@@ -141,9 +157,78 @@
         <div class="mini"><span class="mini-glyph">☽</span><span>Луна в ${moon.signName}</span></div>
         <div class="mini"><span class="mini-glyph">↑</span><span>Асцендент ${chart.asc.signName}</span></div>
       </div>
+      <div id="transit-today"></div>
       <button class="link-btn" id="go-chart">Виж пълната си натална карта →</button>
     `;
     $("#go-chart").addEventListener("click", () => showScreen("chart"));
+    renderTransitToday($("#transit-today"));
+  }
+
+  function renderTransitToday(host) {
+    const tp = Astro.transitPositions(new Date());
+    const aspects = Astro.transitAspects(chart.planets, tp).slice(0, 5);
+    const headline = Interp.transitHeadline(aspects);
+    let rows = "";
+    for (const a of aspects) {
+      const tone = (a.aspect === "квадрат" || a.aspect === "опозиция") ? "tense"
+        : (a.aspect === "съединение" ? "neutral" : "harmon");
+      rows += `<details class="transit-item ${tone}">
+        <summary>
+          <span class="t-glyph">${chart.planets[a.transit].glyph}</span>
+          <span class="t-line">${a.transit} ${a.glyph} ${a.natal}</span>
+          <span class="t-asp">${a.aspect}</span>
+        </summary>
+        <div class="t-body">${esc(Interp.transitText(a.transit, a.natal, a.aspect))}</div>
+      </details>`;
+    }
+    host.innerHTML = `
+      <h2 class="section-title">Какво се случва за теб днес</h2>
+      <p class="section-sub">Къде са планетите днес спрямо твоята натална карта.</p>
+      <div class="transit-headline">${esc(headline)}</div>
+      <div class="transit-list">${rows || '<p class="muted small">Днес няма тесни транзитни аспекти.</p>'}</div>`;
+  }
+
+  // ---------- Лунен календар ----------
+  function renderMoon() {
+    const now = new Date();
+    const ph = Astro.moonPhase(now);
+    const info = Interp.moonPhaseInfo(ph.angle);
+    const up = Astro.upcomingPhases(now);
+    const pct = Math.round(ph.illumination * 100);
+    const frac = ph.angle / 360;             // дял от лунния цикъл
+    const R = 86, C = 2 * Math.PI * R;
+    const dash = (frac * C).toFixed(1);
+
+    const phaseRows = up.map((p) => {
+      const days = Math.max(0, Math.round((p.date - now) / 86400000));
+      const when = days === 0 ? "днес" : days === 1 ? "утре" : `след ${days} дни`;
+      return `<div class="phase-row">
+        <span class="ph-emoji">${p.emoji}</span>
+        <span class="ph-name">${p.name}</span>
+        <span class="ph-date">${fmtDate(p.date)} · <em>${when}</em></span>
+      </div>`;
+    }).join("");
+
+    $("#moon-view").innerHTML = `
+      <h1 class="moon-h1">Лунен календар</h1>
+      <div class="moon-hero">
+        <svg class="moon-ring" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+          <circle cx="100" cy="100" r="${R}" fill="none" stroke="url(#mg)" stroke-width="3"
+            stroke-linecap="round" stroke-dasharray="${dash} ${(C - dash).toFixed(1)}"
+            transform="rotate(-90 100 100)"/>
+          <defs><linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#e8cf86"/><stop offset="1" stop-color="#8a6cff"/>
+          </linearGradient></defs>
+        </svg>
+        <div class="moon-emoji">${info.emoji}</div>
+      </div>
+      <div class="moon-name">${info.name}</div>
+      <div class="moon-illum">${pct}% осветеност · ${ph.ageDays.toFixed(0)} дни от новолунието</div>
+      <div class="moon-meaning">${esc(info.meaning)}</div>
+      <h2 class="section-title">Следващи фази</h2>
+      <div class="phase-list">${phaseRows}</div>
+    `;
   }
 
   // --- SVG колело ---
@@ -158,9 +243,9 @@
   // зодиакална дължина -> екранен ъгъл (Асцендент вляво, обратно на часовниковата стрелка)
   function lonToAngle(lon) { return 180 + (lon - chart.asc.lon); }
 
-  function renderWheel() {
-    const size = 340, cx = size / 2, cy = size / 2;
-    const rOuter = 162, rZodiac = 138, rHouse = 138, rInner = 92, rPlanet = 116;
+  function renderWheel(showTransits) {
+    const size = 380, cx = size / 2, cy = size / 2;
+    const rTransit = 174, rOuter = 152, rZodiac = 130, rHouse = 130, rInner = 84, rPlanet = 108;
     const NS = "http://www.w3.org/2000/svg";
     const svg = document.createElementNS(NS, "svg");
     svg.setAttribute("viewBox", `0 0 ${size} ${size}`);
@@ -243,10 +328,32 @@
       el("line", { x1: lx, y1: ly, x2: px, y2: py, stroke: "rgba(255,255,255,0.15)", "stroke-width": "0.7" });
       const t = el("text", { x: px, y: py, fill: "#f4f1ff", "font-size": "15", "text-anchor": "middle", "dominant-baseline": "central" });
       t.textContent = it.glyph;
+      t.style.cursor = "pointer";
+      t.addEventListener("click", () => openPlanet(it.name));
       const deg = Math.floor(chart.planets[it.name].degInSign);
       const [dx, dy] = polar(cx, cy, r - 13, a);
       const td = el("text", { x: dx, y: dy, fill: "rgba(255,255,255,0.5)", "font-size": "8", "text-anchor": "middle", "dominant-baseline": "central" });
       td.textContent = deg + "°";
+    }
+
+    // транзитен пръстен — днешните планети около наталната карта
+    if (showTransits) {
+      el("circle", { cx, cy, r: rTransit, fill: "none", stroke: "rgba(111,211,224,0.25)", "stroke-width": "1", "stroke-dasharray": "2 3" });
+      const tp = Astro.transitPositions(new Date());
+      const titems = Object.keys(tp).map((n) => ({ name: n, lon: tp[n].lon, glyph: tp[n].glyph, deg: tp[n].degInSign }));
+      titems.sort((p, q) => lonToAngle(p.lon) - lonToAngle(q.lon));
+      let lastT = -999, tog = 0;
+      for (const it of titems) {
+        const a = lonToAngle(it.lon);
+        let r = rTransit;
+        if (Math.abs(a - lastT) < 9) { tog++; r = rTransit - (tog % 2 ? 15 : 0); } else { tog = 0; }
+        lastT = a;
+        const [mx, my] = polar(cx, cy, rOuter, a);
+        const [px, py] = polar(cx, cy, r, a);
+        el("line", { x1: mx, y1: my, x2: px, y2: py, stroke: "rgba(111,211,224,0.25)", "stroke-width": "0.7" });
+        const t = el("text", { x: px, y: py, fill: "#6fd3e0", "font-size": "13", "text-anchor": "middle", "dominant-baseline": "central" });
+        t.textContent = it.glyph;
+      }
     }
     return svg;
   }
@@ -267,11 +374,19 @@
       </div>`;
     host.appendChild(head);
 
-    // колело
+    // колело + превключвател за транзити
     const wheelBox = document.createElement("div");
     wheelBox.className = "wheel-box";
-    wheelBox.appendChild(renderWheel());
+    wheelBox.appendChild(renderWheel(showTransitOverlay));
     host.appendChild(wheelBox);
+
+    const toggle = document.createElement("button");
+    toggle.className = "toggle-btn" + (showTransitOverlay ? " on" : "");
+    toggle.innerHTML = showTransitOverlay
+      ? "● Транзитите днес са показани (синьо отвън)"
+      : "○ Покажи транзитите днес върху картата";
+    toggle.addEventListener("click", () => { showTransitOverlay = !showTransitOverlay; renderChart(); showScreen("chart"); });
+    host.appendChild(toggle);
 
     // обяснения
     const sun = c.planets["Слънце"], moon = c.planets["Луна"];
@@ -298,6 +413,7 @@
       const pl = c.planets[name];
       const item = document.createElement("details");
       item.className = "planet-item";
+      item.id = "pl-" + name;
       item.innerHTML = `
         <summary>
           <span class="p-glyph">${pl.glyph}</span>

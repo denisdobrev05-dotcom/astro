@@ -146,6 +146,60 @@ select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.o
 .ghost-btn{padding:12px 20px;background:none;border:1px solid var(--line);border-radius:12px;color:var(--muted);font-size:14px;cursor:pointer}
 .ghost-btn:active{background:var(--panel)}
 
+/* ---------- Транзити „Днес“ ---------- */
+#transit-today{margin-top:8px}
+.transit-headline{
+  padding:16px 18px;border-radius:14px;margin-bottom:12px;font-size:15.5px;
+  background:linear-gradient(160deg, rgba(138,108,255,.18), rgba(63,123,191,.12));
+  border:1px solid var(--line);
+}
+.transit-list{display:flex;flex-direction:column;gap:9px}
+.transit-item{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;border-left:3px solid var(--muted)}
+.transit-item.harmon{border-left-color:#3f7bbf}
+.transit-item.tense{border-left-color:#e0533d}
+.transit-item.neutral{border-left-color:var(--gold)}
+.transit-item summary{display:flex;align-items:center;gap:10px;padding:13px 15px;cursor:pointer;list-style:none;font-size:14.5px}
+.transit-item summary::-webkit-details-marker{display:none}
+.t-glyph{font-size:18px;color:var(--gold-soft);width:22px;text-align:center}
+.t-line{font-weight:600}
+.t-asp{margin-left:auto;color:var(--muted);font-size:13px}
+.t-body{padding:0 15px 14px;font-size:14px;color:#d9d6ee}
+
+/* ---------- Превключвател транзити върху колелото ---------- */
+.toggle-btn{
+  display:block;width:100%;margin:4px 0 6px;padding:12px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--line);color:var(--muted);
+  font-size:14px;cursor:pointer;transition:all .2s;
+}
+.toggle-btn.on{color:#6fd3e0;border-color:rgba(111,211,224,.4);background:rgba(111,211,224,.08)}
+
+/* ---------- Лунен календар ---------- */
+.moon-h1{font-size:24px;font-weight:700;margin:16px 0 8px;text-align:center}
+.moon-hero{position:relative;width:200px;height:200px;margin:8px auto 0}
+.moon-ring{position:absolute;inset:0;width:100%;height:100%;filter:drop-shadow(0 0 10px rgba(138,108,255,.3))}
+.moon-emoji{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:96px;animation:floaty 6s ease-in-out infinite;
+  filter:drop-shadow(0 6px 26px rgba(232,207,134,.35));
+}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.moon-name{text-align:center;font-size:22px;font-weight:700;margin-top:6px;color:var(--gold-soft)}
+.moon-illum{text-align:center;color:var(--muted);font-size:14px;margin-top:3px}
+.moon-meaning{
+  margin:20px 0;padding:20px 20px;border-radius:var(--radius);font-size:16px;line-height:1.6;
+  background:linear-gradient(160deg, rgba(40,30,90,.5), rgba(18,14,42,.5));border:1px solid var(--line);
+}
+.phase-list{display:flex;flex-direction:column;gap:9px}
+.phase-row{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--panel);border:1px solid var(--line);border-radius:12px}
+.ph-emoji{font-size:24px}
+.ph-name{font-weight:600;font-size:15px}
+.ph-date{margin-left:auto;text-align:right;color:var(--muted);font-size:12.5px;line-height:1.4;text-transform:capitalize}
+.ph-date em{color:var(--gold-soft);font-style:normal}
+
+/* подсветване при кликане на планета от колелото */
+.planet-item.flash{animation:flash 1.5s ease}
+@keyframes flash{0%,100%{box-shadow:none}30%{box-shadow:0 0 0 2px rgba(232,207,134,.6)}}
+
 /* ---------- Долна навигация ---------- */
 .bottom-nav{
   position:fixed;left:0;right:0;bottom:0;z-index:6;

@@ -87,6 +87,11 @@
       <div class="screen-inner" id="today"></div>
     </section>
 
+    <!-- Екран: Луна -->
+    <section class="screen" data-screen="moon">
+      <div class="screen-inner" id="moon-view"></div>
+    </section>
+
     <!-- Екран: Карта -->
     <section class="screen" data-screen="chart">
       <div class="screen-inner" id="chart-view"></div>
@@ -95,6 +100,7 @@
 
   <nav class="bottom-nav hidden">
     <button class="nav-btn" data-go="today"><span class="ic">☀</span><span>Днес</span></button>
+    <button class="nav-btn" data-go="moon"><span class="ic">☾</span><span>Луна</span></button>
     <button class="nav-btn" data-go="chart"><span class="ic">✦</span><span>Карта</span></button>
     <button class="nav-btn" data-go="form"><span class="ic">⚙</span><span>Данни</span></button>
   </nav>
@@ -117,9 +123,28 @@
       }
       host.innerHTML = html;
     })();
-    // регистрация на service worker (offline)
+    // регистрация на service worker (offline) + авто-обновяване при нова версия
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(console.error));
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (refreshing) return;
+        refreshing = true;
+        window.location.reload();
+      });
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").then((reg) => {
+          reg.update();
+          reg.addEventListener("updatefound", () => {
+            const nw = reg.installing;
+            if (!nw) return;
+            nw.addEventListener("statechange", () => {
+              if (nw.state === "installed" && navigator.serviceWorker.controller) {
+                nw.postMessage("skipWaiting"); // активирай новата версия веднага
+              }
+            });
+          });
+        }).catch(console.error);
+      });
     }
   </script>
 </body>

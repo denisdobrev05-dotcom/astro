@@ -1,5 +1,7 @@
-/* sw.js — service worker за offline работа. Cache-first за приложната обвивка. */
-const CACHE = "zvezdna-karta-v1";
+/* sw.js — service worker за offline работа.
+ * Стратегия: „network-first“ за съдържание от същия източник (винаги показва
+ * най-новата версия, когато има интернет) с връщане към кеша при offline. */
+const CACHE = "zvezdna-karta-v3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -29,20 +31,35 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+self.addEventListener("message", (e) => {
+  if (e.data === "skipWaiting") self.skipWaiting();
+});
+
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
-  e.respondWith(
-    caches.match(req).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        // кешираме нови ресурси от същия източник
-        if (res && res.status === 200 && req.url.startsWith(self.location.origin)) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy));
-        }
-        return res;
-      }).catch(() => caches.match("./index.html"));
-    })
-  );
+  const sameOrigin = req.url.startsWith(self.location.origin);
+
+  // network-first за съдържание от същия източник → винаги най-новата версия онлайн
+  if (sameOrigin) {
+    e.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res && res.status === 200) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(() =>
+          caches.match(req).then((cached) =>
+            cached || (req.mode === "navigate" ? caches.match("./index.html") : Promise.reject("offline"))
+          )
+        )
+    );
+    return;
+  }
+
+  // други (външни) заявки — cache-first
+  e.respondWith(caches.match(req).then((c) => c || fetch(req)));
 });

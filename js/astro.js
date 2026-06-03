@@ -308,11 +308,102 @@ const Astro = (function () {
     };
   }
 
+  // ---- Транзити (текущи позиции спрямо наталната карта) ----
+  function jdFromDate(d) {
+    return julianDay(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(),
+      d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds());
+  }
+  function jdToDate(jd) { return new Date((jd - 2440587.5) * 86400000); }
+
+  function allLongitudes(JD) {
+    const T = (JD - 2451545.0) / 36525;
+    const { dPsi } = nutationAndObliquity(T);
+    const precession = (5028.796195 * T + 1.1054348 * T * T) / 3600;
+    const lon = {};
+    lon["Слънце"] = sunLongitude(T);
+    lon["Луна"] = moonLongitude(T, dPsi);
+    for (const name of ["Меркурий", "Венера", "Марс", "Юпитер", "Сатурн", "Уран", "Нептун", "Плутон"]) {
+      lon[name] = planetLongitude(name, T, precession, dPsi);
+    }
+    return lon;
+  }
+
+  // Позиции на планетите за даден момент (без домове) — геоцентрични, не зависят от място
+  function transitPositions(date) {
+    const lon = allLongitudes(jdFromDate(date));
+    const planets = {};
+    for (const name of Object.keys(lon)) {
+      const l = lon[name];
+      const sign = Math.floor(l / 30);
+      planets[name] = { lon: l, sign, signName: SIGNS[sign], degInSign: l - sign * 30, glyph: PLANET_GLYPHS[name] };
+    }
+    return planets;
+  }
+
+  // Аспекти на транзитните планети към наталните (по-тесни орбиси)
+  function transitAspects(natalPlanets, transitPlanets) {
+    const orbs = { "съединение": 3, "опозиция": 3, "тригон": 2.5, "квадрат": 2.5, "секстил": 2 };
+    const out = [];
+    for (const tName of Object.keys(transitPlanets)) {
+      for (const nName of Object.keys(natalPlanets)) {
+        let diff = Math.abs(transitPlanets[tName].lon - natalPlanets[nName].lon);
+        if (diff > 180) diff = 360 - diff;
+        for (const asp of ASPECTS) {
+          const orb = Math.abs(diff - asp.angle);
+          if (orb <= (orbs[asp.name] || 2)) {
+            out.push({ transit: tName, natal: nName, aspect: asp.name, glyph: asp.glyph, orb });
+            break;
+          }
+        }
+      }
+    }
+    out.sort((a, b) => a.orb - b.orb);
+    return out;
+  }
+
+  // ---- Лунни фази ----
+  function phaseAngleJD(JD) {
+    const T = (JD - 2451545.0) / 36525;
+    const { dPsi } = nutationAndObliquity(T);
+    return norm360(moonLongitude(T, dPsi) - sunLongitude(T));
+  }
+  function moonPhase(date) {
+    const angle = phaseAngleJD(jdFromDate(date));
+    const illum = (1 - cosd(angle)) / 2;
+    return { angle, illumination: illum, ageDays: (angle / 360) * 29.530588853, waxing: angle < 180 };
+  }
+  function nextPhase(fromJD, target) {
+    const rate = 12.190749; // средно градуси/ден за разликата Луна–Слънце
+    let delta = norm360(target - phaseAngleJD(fromJD));
+    if (delta < 1) delta += 360;
+    let jd = fromJD + delta / rate;
+    for (let i = 0; i < 12; i++) {
+      let g = phaseAngleJD(jd) - target;
+      g = ((g + 180) % 360 + 360) % 360 - 180;
+      jd -= g / rate;
+    }
+    return jd;
+  }
+  function upcomingPhases(date) {
+    const fromJD = jdFromDate(date);
+    const targets = [
+      { name: "Новолуние", emoji: "🌑", t: 0 },
+      { name: "Първа четвърт", emoji: "🌓", t: 90 },
+      { name: "Пълнолуние", emoji: "🌕", t: 180 },
+      { name: "Последна четвърт", emoji: "🌗", t: 270 },
+    ];
+    const list = targets.map((o) => ({ name: o.name, emoji: o.emoji, date: jdToDate(nextPhase(fromJD, o.t)) }));
+    list.sort((a, b) => a.date - b.date);
+    return list;
+  }
+
   return {
     computeChart,
     julianDay,
     SIGNS, SIGN_GLYPHS, PLANET_GLYPHS,
     norm360,
+    transitPositions, transitAspects,
+    moonPhase, upcomingPhases,
   };
 })();
 

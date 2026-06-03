@@ -1,5 +1,5 @@
 /* sw.js — service worker за offline работа. Cache-first за приложната обвивка. */
-const CACHE = "zvezdna-karta-v1";
+const CACHE = "zvezdna-karta-v2";
 const ASSETS = [
   "./",
   "./index.html",
